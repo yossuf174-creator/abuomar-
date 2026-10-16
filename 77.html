@@ -1,0 +1,216 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const AdvancedElectricalReportApp());
+}
+
+class AdvancedElectricalReportApp extends StatelessWidget {
+  const AdvancedElectricalReportApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'محاكي التقارير والربط الكهربائي',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.amber,
+      ),
+      home: const ReportSimulatorScreen(),
+    );
+  }
+}
+
+class ReportSimulatorScreen extends StatefulWidget {
+  const ReportSimulatorScreen({Key? key}) : super(key: key);
+
+  @override
+  _ReportSimulatorScreenState createState() => _ReportSimulatorScreenState();
+}
+
+class _ReportSimulatorScreenState extends State<ReportSimulatorScreen> {
+  bool _isPowerOn = false;
+  double _voltage = 12.0;
+  double _resistance = 40.0;
+  
+  // قائمة لتخزين سجل القياسات والتقارير داخل التطبيق
+  final List<String> _savedReports = [];
+
+  double get _current => _isPowerOn ? (_voltage / _resistance) : 0.0;
+  double get _power => _voltage * _current;
+
+  // دالة لحفظ القياس الحالي كتقرير
+  void _saveCurrentReport() {
+    final report = 'جهد: ${_voltage.toStringAsFixed(1)}V | مقاومة: ${_resistance.toInt()}Ω | تيار: ${_current.toStringAsFixed(2)}A | قدرة: ${_power.toStringAsFixed(1)}W';
+    setState(() {
+      _savedReports.add(report);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم حفظ التقرير في السجل بنجاح')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('المحاكي مع سجل التقارير'),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          // 1. لوحة الرسم البصري للأسلاك والمكونات
+          Expanded(
+            flex: 3,
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                border: Border.all(color: _isPowerOn ? Colors.greenAccent : Colors.grey, width: 2),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: CustomPaint(
+                painter: CircuitPainter(isPowerOn: _isPowerOn, current: _current),
+                child: const Center(
+                  child: Text(
+                    'مخطط الدائرة التفاعلي',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 2. لوحة التحكم والقياس والحفظ
+          Expanded(
+            flex: 5,
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _infoBadge('الجهد', '${_voltage.toStringAsFixed(1)} V', Colors.blue),
+                        _infoBadge('التيار', '${_current.toStringAsFixed(2)} A', Colors.amber),
+                        _infoBadge('القدرة', '${_power.toStringAsFixed(1)} W', Colors.green),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _isPowerOn = !_isPowerOn;
+                              });
+                            },
+                            icon: Icon(_isPowerOn ? Icons.bolt : Icons.power_off),
+                            label: Text(_isPowerOn ? 'إيقاف التيار' : 'تشغيل التيار'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _isPowerOn ? Colors.red : Colors.green,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton.icon(
+                          onPressed: _saveCurrentReport,
+                          icon: const Icon(Icons.save),
+                          label: const Text('حفظ تقرير'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Text('الجهد:', style: TextStyle(fontSize: 12)),
+                    Slider(
+                      value: _voltage,
+                      min: 5.0,
+                      max: 30.0,
+                      divisions: 25,
+                      onChanged: (val) => setState(() => _voltage = val),
+                    ),
+                    const Text('المقاومة:', style: TextStyle(fontSize: 12)),
+                    Slider(
+                      value: _resistance,
+                      min: 10.0,
+                      max: 100.0,
+                      divisions: 18,
+                      onChanged: (val) => setState(() => _resistance = val),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text('سجل التقارير المحفوظة:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 5),
+                    SizedBox(
+                      height: 80,
+                      child: _savedReports.isEmpty
+                          const Center(child: Text('لا توجد تقارير محفوظة حالياً', style: TextStyle(color: Colors.grey, fontSize: 12)))
+                          : ListView.builder(
+                              itemCount: _savedReports.length,
+                              itemBuilder: (context, index) {
+                                return Card(
+                                  color: Colors.grey.shade800,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(_savedReports[index], style: const TextStyle(fontSize: 11)),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoBadge(String title, String val, Color color) {
+    return Column(
+      children: [
+        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        Text(val, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+// رسم توضيحي تفاعلي للأسلاك والعناصر
+class CircuitPainter extends CustomPainter {
+  final bool isPowerOn;
+  final double current;
+
+  CircuitPainter({required this.isPowerOn, required this.current});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = isPowerOn ? Colors.greenAccent : Colors.grey
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    path.addRect(Rect.fromLTWH(size.width * 0.15, size.height * 0.15, size.width * 0.7, size.height * 0.7));
+    canvas.drawPath(path, paint);
+
+    if (isPowerOn && current > 0) {
+      final nodePaint = Paint()
+        ..color = Colors.amberAccent
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.15), 8, nodePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}

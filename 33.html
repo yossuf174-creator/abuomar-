@@ -1,0 +1,139 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const ElectricalSimulatorApp());
+}
+
+class ElectricalSimulatorApp extends StatelessWidget {
+  const ElectricalSimulatorApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'محاكي الكهرباء الحقيقي',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.amber,
+      ),
+      home: const SimulatorHomeScreen(),
+    );
+  }
+}
+
+class SimulatorHomeScreen extends StatefulWidget {
+  const SimulatorHomeScreen({Key? key}) : super(key: key);
+
+  @override
+  _SimulatorHomeScreenState createState() => _SimulatorHomeScreenState();
+}
+
+class _SimulatorHomeScreenState extends State<SimulatorHomeScreen> {
+  // حالة الدائرة الكهربائية (مغلقة/مفتوحة)
+  bool _isPowerOn = false;
+  double _voltage = 12.0; // الفولتية الافتراضية
+  double _resistance = 100.0; // المقاومة
+
+  // حساب التيار بناءً على قانون أوم (I = V / R)
+  double get _calculateCurrent => _isPowerOn ? (_voltage / _resistance) : 0.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('محاكي الدوائر الكهربائية'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // لوحة عرض حالة الدائرة والمؤشرات الحية
+            Card(
+              elevation: 4,
+              color: _isPowerOn ? Colors.amber.shade900 : Colors.grey.shade800,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      _isPowerOn ? Icons.bolt : Icons.power_off,
+                      size: 64,
+                      color: _isPowerOn ? Colors.yellowAccent : Colors.grey,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _isPowerOn ? 'الدائرة تعمل (متصلة)' : 'الدائرة متوقفة (مفصولة)',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text('الفولت: $_voltage V'),
+                        Text('المقاومة: $_resistance Ω'),
+                        Text('التيار: ${_calculateCurrent.toStringAsFixed(2)} A',
+                            style: const TextStyle(color: Colors.yellowAccent)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // زر التشغيل والإيقاف الرئيسي (مفتاح الدائرة)
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isPowerOn = !_isPowerOn;
+                });
+              },
+              icon: Icon(_isPowerOn ? Icons.stop : Icons.play_arrow),
+              label: Text(_isPowerOn ? 'فصل التيار الكهربائي' : 'تشغيل الدائرة'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isPowerOn ? Colors.red : Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // إعدادات وتعديل قيم الفولتية
+            const Text('التحكم في مصدر الجهد (الفولت):', style: TextStyle(fontWeight: FontWeight.bold)),
+            Slider(
+              value: _voltage,
+              min: 1.0,
+              max: 24.0,
+              divisions: 23,
+              label: '$_voltage فولت',
+              onChanged: (value) {
+                setState(() {
+                  _voltage = value;
+                });
+              },
+            ),
+
+            const SizedBox(height: 10),
+            // إعدادات وتعديل المقاومة
+            const Text('التحكم في قيمة المقاومة (أوم):', style: TextStyle(fontWeight: FontWeight.bold)),
+            Slider(
+              value: _resistance,
+              min: 10.0,
+              max: 500.0,
+              divisions: 49,
+              label: '${_resistance.toInt()} أوم',
+              onChanged: (value) {
+                setState(() {
+                  _resistance = value;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

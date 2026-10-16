@@ -1,0 +1,309 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const UltimateElectricalApp());
+}
+
+class UltimateElectricalApp extends StatelessWidget {
+  const UltimateElectricalApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'محاكي الكهرباء الشامل',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.amber,
+      ),
+      home: const UltimateSimulatorScreen(),
+    );
+  }
+}
+
+class UltimateSimulatorScreen extends StatefulWidget {
+  const UltimateSimulatorScreen({Key? key}) : super(key: key);
+
+  @override
+  _UltimateSimulatorScreenState createState() => _UltimateSimulatorScreenState();
+}
+
+class _UltimateSimulatorScreenState extends State<UltimateSimulatorScreen> {
+  // متغيرات الأدوات والخصائص الكهربائية
+  bool _isMainPowerOn = false;
+  double _voltage = 12.0;       // الجهد (فولت)
+  double _resistance = 40.0;    // المقاومة (أوم)
+  double _capacitance = 10.0;   // سعة المكثف (ميكروفاراد)
+  bool _isLampConnected = true; // توصيل المصباح
+  bool _isDiodeEnabled = false; // تفعيل الدايود
+  bool _isCapacitorActive = false; // تفعيل المكثف
+
+  // سجل التقارير المحفوظة
+  final List<String> _savedReports = [];
+
+  // حساب التيار الكهربائي (قانون أوم)
+  double get _current {
+    if (!_isMainPowerOn || !_isLampConnected) return 0.0;
+    double effectiveResistance = _resistance + (_isDiodeEnabled ? 5.0 : 0.0);
+    return effectiveResistance > 0 ? (_voltage / effectiveResistance) : 0.0;
+  }
+
+  // حساب القدرة المستهلكة (وات)
+  double get _power => _voltage * _current;
+
+  // دالة حفظ التقرير الحالي
+  void _saveCurrentReport() {
+    final report = 'جهد: ${_voltage.toStringAsFixed(1)}V | مقاومة: ${_resistance.toInt()}Ω | تيار: ${_current.toStringAsFixed(2)}A | قدرة: ${_power.toStringAsFixed(1)}W';
+    setState(() {
+      _savedReports.add(report);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم حفظ التقرير في السجل بنجاح')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('محاكي الأدوات والتقارير الكهربائية'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. لوحة الرسم التفاعلي (Canvas)
+            Container(
+              height: 150,
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                border: Border.all(color: _isMainPowerOn ? Colors.greenAccent : Colors.grey, width: 2),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: CustomPaint(
+                painter: CircuitPainter(isPowerOn: _isMainPowerOn, current: _current),
+                child: const Center(
+                  child: Text(
+                    'مخطط الدائرة التفاعلي المرئي',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 2. شاشة القياس الرقمية (Digital Multimeter)
+            Card(
+              elevation: 6,
+              color: Colors.grey.shade900,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+                side: BorderSide(
+                  color: _isMainPowerOn ? Colors.greenAccent : Colors.redAccent,
+                  width: 2,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.speed, color: Colors.amber),
+                        SizedBox(width: 8),
+                        Text(
+                          'الملتميتر الرقمي (Multimeter)',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _metricBox('الجهد (V)', '${_voltage.toStringAsFixed(1)} V', Colors.blueAccent),
+                        _metricBox('التيار (I)', '${_current.toStringAsFixed(2)} A', Colors.amberAccent),
+                        _metricBox('القدرة (P)', '${_power.toStringAsFixed(1)} W', Colors.greenAccent),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 3. مفتاح التشغيل الرئيسي وأزرار الحفظ
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isMainPowerOn = !_isMainPowerOn;
+                      });
+                    },
+                    icon: Icon(_isMainPowerOn ? Icons.power : Icons.power_off),
+                    label: Text(_isMainPowerOn ? 'إيقاف المفتاح (OFF)' : 'تشغيل المفتاح (ON)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isMainPowerOn ? Colors.red.shade700 : Colors.green.shade700,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: _saveCurrentReport,
+                  icon: const Icon(Icons.save),
+                  label: const Text('حفظ تقرير'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // 4. أدوات التحكم بالقيم (Sliders)
+            const Text('أداة مصدر الجهد المتغير (Voltage Source):', style: TextStyle(fontWeight: FontWeight.bold)),
+            Slider(
+              value: _voltage,
+              min: 3.0,
+              max: 48.0,
+              divisions: 45,
+              label: '${_voltage.toStringAsFixed(1)} فولت',
+              onChanged: (value) {
+                setState(() {
+                  _voltage = value;
+                });
+              },
+            ),
+
+            const Text('أداة المقاومة المتغيرة (Rheostat):', style: TextStyle(fontWeight: FontWeight.bold)),
+            Slider(
+              value: _resistance,
+              min: 5.0,
+              max: 200.0,
+              divisions: 39,
+              label: '${_resistance.toInt()} أوم',
+              onChanged: (value) {
+                setState(() {
+                  _resistance = value;
+                });
+              },
+            ),
+
+            const Text('أداة سعة المكثف (Capacitor):', style: TextStyle(fontWeight: FontWeight.bold)),
+            Slider(
+              value: _capacitance,
+              min: 1.0,
+              max: 100.0,
+              divisions: 99,
+              label: '${_capacitance.toInt()} ميكروفاراد',
+              onChanged: (value) {
+                setState(() {
+                  _capacitance = value;
+                });
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // 5. أدوات وقواطع التحكم الفرعية (Switches)
+            SwitchListTile(
+              title: const Text('توصيل/فصل عنصر المصباح'),
+              value: _isLampConnected,
+              onChanged: (bool value) {
+                setState(() {
+                  _isLampConnected = value;
+                });
+              },
+            ),
+            SwitchListTile(
+              title: const Text('تفعيل عنصر الدايود (موحد التيار)'),
+              value: _isDiodeEnabled,
+              onChanged: (bool value) {
+                setState(() {
+                  _isDiodeEnabled = value;
+                });
+              },
+            ),
+            SwitchListTile(
+              title: const Text('إدراج المكثف في الدائرة'),
+              value: _isCapacitorActive,
+              onChanged: (bool value) {
+                setState(() {
+                  _isCapacitorActive = value;
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // 6. عرض سجل التقارير المحفوظة
+            const Text('سجل التقارير المحفوظة:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120,
+              child: _savedReports.isEmpty
+                  ? const Center(child: Text('لا توجد تقارير محفوظة حالياً', style: TextStyle(color: Colors.grey)))
+                  : ListView.builder(
+                      itemCount: _savedReports.length,
+                      itemBuilder: (context, index) {
+                        return Card(
+                          color: Colors.grey.shade800,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(_savedReports[index], style: const TextStyle(fontSize: 12)),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _metricBox(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 5),
+        Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+// دالة رسم مسار الدائرة الكهربائية (Canvas)
+class CircuitPainter extends CustomPainter {
+  final bool isPowerOn;
+  final double current;
+
+  CircuitPainter({required this.isPowerOn, required this.current});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = isPowerOn ? Colors.greenAccent : Colors.grey
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    path.addRect(Rect.fromLTWH(size.width * 0.15, size.height * 0.15, size.width * 0.7, size.height * 0.7));
+    canvas.drawPath(path, paint);
+
+    if (isPowerOn && current > 0) {
+      final nodePaint = Paint()
+        ..color = Colors.amberAccent
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.15), 8, nodePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}

@@ -1,0 +1,83 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const RealToolsApp());
+}
+
+class RealToolsApp extends StatelessWidget {
+  const RealToolsApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'تطبيق الأدوات الشامل',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        brightness: Brightness.dark, // تصميم حديث وداكن يناسب التطبيقات التقنية
+      ),
+      home: const ToolsHomeScreen(),
+    );
+  }
+}
+
+class ToolsHomeScreen extends StatelessWidget {
+  const ToolsHomeScreen({Key? key}) : super(key: key);
+
+  final List<Map<String, dynamic>> toolsList = const [
+    {'title': 'أداة معالجة الملفات', 'icon': Icons.folder_special, 'color': Colors.orange},
+    {'title': 'فحص الشبكة والاتصال', 'icon': Icons.network_check, 'color': Colors.blue},
+    {'title': 'إدارة السكربتات والأوامر', 'icon': Icons.code, 'color': Colors.green},
+    {'title': 'تحويل النصوص والبيانات', 'icon': Icons.transform, 'color': Colors.purple},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('تطبيق الأدوات الحقيقي'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: GridView.builder(
+          itemCount: toolsList.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.1,
+          ),
+          itemBuilder: (context, index) {
+            final tool = toolsList[index];
+            return Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(15),
+                onTap: () {
+                  // هنا يتم توجيه المستخدم للأداة الفعلية داخل التطبيق
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('جاري فتح: ${tool['title']}')),
+                  );
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(tool['icon'], size: 48, color: tool['color']),
+                    const SizedBox(height: 12),
+                    Text(
+                      tool['title'],
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,167 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const AdvancedElectricalApp());
+}
+
+class AdvancedElectricalApp extends StatelessWidget {
+  const AdvancedElectricalApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'محاكي الكهرباء المرئي',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.amber,
+      ),
+      home: const VisualSimulatorScreen(),
+    );
+  }
+}
+
+class VisualSimulatorScreen extends StatefulWidget {
+  const VisualSimulatorScreen({Key? key}) : super(key: key);
+
+  @override
+  _VisualSimulatorScreenState createState() => _VisualSimulatorScreenState();
+}
+
+class _VisualSimulatorScreenState extends State<VisualSimulatorScreen> {
+  bool _isPowerOn = false;
+  double _voltage = 12.0;
+  double _resistance = 40.0;
+
+  double get _current => _isPowerOn ? (_voltage / _resistance) : 0.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('لوحة المحاكاة والربط المرئي'),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          // 1. لوحة الرسم البصري للأسلاك والمكونات (Canvas)
+          Expanded(
+            flex: 3,
+            heading: Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                border: Border.all(color: _isPowerOn ? Colors.greenAccent : Colors.grey, width: 2),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: CustomPaint(
+                painter: CircuitPainter(isPowerOn: _isPowerOn, current: _current),
+                child: const Center(
+                  child: Text(
+                    'مخطط الدائرة التفاعلي',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 2. لوحة القياس والتحكم السريعة
+          Expanded(
+            flex: 4,
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _infoBadge('الجهد', '${_voltage.toStringAsFixed(1)} V', Colors.blue),
+                      _infoBadge('التيار', '${_current.toStringAsFixed(2)} A', Colors.amber),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isPowerOn = !_isPowerOn;
+                      });
+                    },
+                    icon: Icon(_isPowerOn ? Icons.bolt : Icons.power_off),
+                    label: Text(_isPowerOn ? 'إيقاف التيار' : 'تشغيل التيار'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isPowerOn ? Colors.red : Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('الجهد:', style: TextStyle(fontSize: 12)),
+                  Slider(
+                    value: _voltage,
+                    min: 5.0,
+                    max: 30.0,
+                    divisions: 25,
+                    onChanged: (val) => setState(() => _voltage = val),
+                  ),
+                  const Text('المقاومة:', style: TextStyle(fontSize: 12)),
+                  Slider(
+                    value: _resistance,
+                    min: 10.0,
+                    max: 100.0,
+                    divisions: 18,
+                    onChanged: (val) => setState(() => _resistance = val),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoBadge(String title, String val, Color color) {
+    return Column(
+      children: [
+        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        Text(val, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+// رسم توضيحي تفاعلي للأسلاك والعناصر (Canvas Painter)
+class CircuitPainter extends CustomPainter {
+  final bool isPowerOn;
+  final double current;
+
+  CircuitPainter({required this.isPowerOn, required this.current});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = isPowerOn ? Colors.greenAccent : Colors.grey
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    // رسم مسار الدائرة الكهربائية بشكل مرئي مبسط
+    path.addRect(Rect.fromLTWH(size.width * 0.15, size.height * 0.15, size.width * 0.7, size.height * 0.7));
+    canvas.drawPath(path, paint);
+
+    // رسم مؤشر تدفق الطاقة إذا كانت الدائرة تعمل
+    if (isPowerOn && current > 0) {
+      final nodePaint = Paint()
+        ..color = Colors.amberAccent
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.15), 8, nodePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
