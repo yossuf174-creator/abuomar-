@@ -1,0 +1,240 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Dart
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Note: This workflow uses the latest stable version of the Dart SDK.
+      # You can specify other versions if desired, see documentation here:
+      # https://github.com/dart-lang/setup-dart/blob/main/README.md
+      # - uses: dart-lang/setup-dart@v1
+      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      - name: Install dependencies
+        run: dart pub get
+
+      # Uncomment this step to verify the use of 'dart format' on each commit.
+      # - name: Verify formatting
+      #   run: dart format --output=none --set-exit-if-changed .
+
+      # Consider passing '--fatal-infos' for slightly stricter analysis.
+      - name: Analyze project source
+        run: dart analyze
+
+      # Your project will need to have tests in test/ and a dependency on
+      # package:test for this step to succeed. Note that Flutter projects will
+      # want to change this to 'flutter test'.
+      - name: Run tests
+        run: dart test
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const ElectricalSimulatorApp());
+}
+
+class ElectricalSimulatorApp extends StatelessWidget {
+  const ElectricalSimulatorApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Electrical Circuit Simulator',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
+      ),
+      home: const SimulatorHomePage(),
+    );
+  }
+}
+
+class SimulatorHomePage extends StatefulWidget {
+  const SimulatorHomePage({Key? key}) : super(key: key);
+
+  @override
+  State<SimulatorHomePage> createState() => _SimulatorHomePageState();
+}
+
+class _SimulatorHomePageState extends State<SimulatorHomePage> {
+  // حالات العناصر في الدائرة التفاعلية
+  bool isSourceActive = true;
+  bool isMcbOn = true;
+  bool isRcboOn = true;
+  double loadResistance = 220.0; // أوم
+
+  @override
+  Widget build(BuildContext context) {
+    // حسابات قانون أوم للمحاكاة
+    double voltage = (isSourceActive && isMcbOn && isRcboOn) ? 230.0 : 0.0;
+    double current = loadResistance > 0 ? voltage / loadResistance : 0.0;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('محاكي الدوائر الكهربائية الاحترافي'),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          // لوحة القياس الرقمية (المتر)
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blueAccent, width: 2),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildMeterReading('الجهد (Voltage)', '${voltage.toStringAsFixed(1)} V', Colors.redAccent),
+                _buildMeterReading('التيار (Current)', '${current.toStringAsFixed(2)} A', Colors.blueAccent),
+                _buildMeterReading('المقاومة (Load)', '${loadResistance.toStringAsFixed(0)} Ω', Colors.greenAccent),
+              ],
+            ),
+          ),
+
+          // لوحة الرسم والمحاكاة التفاعلية
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: CustomPaint(
+                painter: CircuitPainter(
+                  mcbOn: isMcbOn,
+                  rcboOn: isRcboOn,
+                  active: isSourceActive,
+                ),
+                child: const Center(
+                  child: Text(
+                    'لوحة المحاكاة التفاعلية والأسلاك',
+                    style: TextStyle(color: Colors.white54, fontSize: 16),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // أزرار التحكم في القواطع والمصدر
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.grey[850],
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isMcbOn ? Colors.green : Colors.red,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          isMcbOn = !isMcbOn;
+                        });
+                      },
+                      icon: const Icon(Icons.power),
+                      label: Text(isMcbOn ? 'قاطع MCB: شغال' : 'قاطع MCB: مفصول'),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isRcboOn ? Colors.green : Colors.red,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          isRcboOn = !isRcboOn;
+                        });
+                      },
+                      icon: const Icon(Icons.security),
+                      label: Text(isRcboOn ? 'قاطع RCBO: شغال' : 'قاطع RCBO: مفصول'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Slider(
+                  value: loadResistance,
+                  min: 10,
+                  max: 500,
+                  divisions: 49,
+                  label: '${loadResistance.toStringAsFixed(0)} أوم',
+                  onChanged: (value) {
+                    setState(() {
+                      loadResistance = value;
+                    });
+                  },
+                ),
+                const Text('تحكم بقيمة الحمل (المقاومة)', style: TextStyle(color: Colors.white70)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMeterReading(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
+    );
+  }
+}
+
+// رسام الدائرة الكهربائية المخصص
+class CircuitPainter extends CustomPainter {
+  final bool mcbOn;
+  final bool rcboOn;
+  final bool active;
+
+  CircuitPainter({required this.mcbOn, required this.rcboOn, required this.active});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintPhase = Paint()
+      ..color = (active && mcbOn && rcboOn) ? Colors.redAccent : Colors.grey
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke;
+
+    final paintNeutral = Paint()
+      ..color = Colors.blueAccent
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke;
+
+    final paintGround = Paint()
+      ..color = Colors.green
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke;
+
+    // رسم مسارات الأسلاك المعيارية (الحار، البارد، الأرضي)
+    canvas.drawLine(const Offset(50, 50), const Offset(220, 50), paintPhase);
+    canvas.drawLine(const Offset(50, 100), const Offset(220, 100), paintNeutral);
+    canvas.drawLine(const Offset(50, 150), const Offset(220, 150), paintGround);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
